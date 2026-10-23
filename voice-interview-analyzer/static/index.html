@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Microphone Test — Voice Interview Analyzer</title>
+  <style>
+    :root { --bg:#f6f7f9; --card:#fff; --ink:#1d2330; --muted:#5b6475; --line:#dde1e8; --accent:#2f6fed; --ok:#1f9d55; --err:#c53030; }
+    @media (prefers-color-scheme: dark) { :root { --bg:#12151b; --card:#1b2029; --ink:#e7eaf0; --muted:#9aa3b2; --line:#2c3340; --accent:#6c9bff; } }
+    * { box-sizing: border-box; }
+    body { margin:0; font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; background:var(--bg); color:var(--ink); }
+    main { max-width:760px; margin:0 auto; padding:24px 16px 48px; }
+    h1 { font-size:22px; margin:0 0 4px; }
+    p.lead { color:var(--muted); margin:0 0 20px; }
+    .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; margin-bottom:16px; }
+    .row { display:flex; gap:12px; flex-wrap:wrap; align-items:end; }
+    label { display:block; font-size:13px; color:var(--muted); margin-bottom:4px; }
+    select { width:100%; padding:8px; border-radius:6px; border:1px solid var(--line); background:var(--card); color:var(--ink); }
+    .field { flex:1 1 260px; }
+    button { padding:9px 14px; border-radius:6px; border:1px solid var(--line); background:var(--card); color:var(--ink); cursor:pointer; font-weight:600; }
+    button.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+    button:disabled { opacity:.5; cursor:not-allowed; }
+    .meter { height:14px; background:var(--line); border-radius:7px; overflow:hidden; }
+    .meter > div { height:100%; width:0; background:var(--ok); transition:width 60ms linear; }
+    .meter-row { margin:10px 0; }
+    .meter-row span { font-size:13px; color:var(--muted); }
+    #status { font-size:14px; color:var(--muted); }
+    #status.error { color:var(--err); }
+    .note { font-size:13px; color:var(--muted); }
+    a { color:var(--accent); }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Microphone Test</h1>
+  <p class="lead">M0 local prototype: checks microphone permission and shows a relative level meter per selected input.
+    Nothing is recorded or sent to the server. For the in-app call, open <a href="/app/">/app/</a>.</p>
+
+  <div class="card">
+    <div class="row">
+      <button id="loadBtn" class="primary">Load microphones</button>
+      <span id="status">Click “Load microphones” and allow access.</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <div class="field">
+        <label for="interviewerSelect">Interviewer input</label>
+        <select id="interviewerSelect" disabled></select>
+      </div>
+      <div class="field">
+        <label for="candidateSelect">Candidate input</label>
+        <select id="candidateSelect" disabled></select>
+      </div>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <button id="startBtn" class="primary" disabled>Start test</button>
+      <button id="stopBtn" disabled>Stop test</button>
+    </div>
+    <div class="meter-row"><span>Interviewer level</span><div class="meter"><div id="interviewerMeter"></div></div></div>
+    <div class="meter-row"><span>Candidate level</span><div class="meter"><div id="candidateMeter"></div></div></div>
+    <p class="note">Levels are relative (RMS-like) and not comparable across different microphones.
+      Legacy caveat: the target application captures one microphone per participant on separate computers.</p>
+  </div>
+</main>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const statusEl = $("status");
+  const selects = { interviewer: $("interviewerSelect"), candidate: $("candidateSelect") };
+  const meters = { interviewer: $("interviewerMeter"), candidate: $("candidateMeter") };
+  let active = []; // { stream, ctx, raf }
+
+  function setStatus(msg, isError = false) {
+    statusEl.textContent = msg;
+    statusEl.classList.toggle("error", isError);
+  }
+
+  async function loadMicrophones() {
+    try {
+      // Ask once so the browser reveals device labels, then release immediately.
+      const probe = await navigator.mediaDevices.getUserMedia({ audio: true });
+      probe.getTracks().forEach((t) => t.stop());
+      const inputs = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === "audioinput");
+      for (const sel of Object.values(selects)) {
+        sel.innerHTML = "";
+        inputs.forEach((d, i) => sel.add(new Option(d.label || `Microphone ${i + 1}`, d.deviceId)));
+        sel.disabled = inputs.length === 0;
+      }
+      if (inputs.length >= 2) selects.candidate.selectedIndex = 1;
+      if (inputs.length < 2) {
+        setStatus(`Found ${inputs.length} input(s). Connect a second microphone to test two distinct inputs.`, inputs.length === 0);
+        $("startBtn").disabled = true;
+      } else {
+        setStatus(`Found ${inputs.length} microphone inputs.`);
+        $("startBtn").disabled = false;
+      }
+    } catch (err) {
+      setStatus(`Microphone access failed: ${err.name} — ${err.message}`, true);
+    }
+  }
+
+  async function startTest() {
+    if (selects.interviewer.value === selects.candidate.value) {
+      setStatus("Choose two different devices for interviewer and candidate.", true);
+      return;
+    }
+    stopTest();
+    try {
+      for (const role of ["interviewer", "candidate"]) {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: { deviceId: { exact: selects[role].value }, echoCancellation: false, noiseSuppression: false, autoGainControl: false },
+        });
+        const ctx = new AudioContext();
+        const analyser = ctx.createAnalyser();
+        analyser.fftSize = 2048;
+        ctx.createMediaStreamSource(stream).connect(analyser);
+        const buf = new Float32Array(analyser.fftSize);
+        const entry = { stream, ctx, raf: 0 };
+        const tick = () => {
+          analyser.getFloatTimeDomainData(buf);
+          let sum = 0;
+          for (const v of buf) sum += v * v;
+          const level = Math.min(1, Math.sqrt(sum / buf.length) * 4);
+          meters[role].style.width = `${(level * 100).toFixed(1)}%`;
+          entry.raf = requestAnimationFrame(tick);
+        };
+        stream.getTracks().forEach((t) => t.addEventListener("ended", () => {
+          setStatus(`${role} microphone disconnected. Stop the test and reload devices.`, true);
+        }));
+        tick();
+        active.push(entry);
+      }
+      setStatus("Testing — speak into each microphone; only the matching meter should react strongly.");
+      $("startBtn").disabled = true;
+      $("stopBtn").disabled = false;
+    } catch (err) {
+      setStatus(`Could not open microphone: ${err.name} — ${err.message}`, true);
+      stopTest();
+    }
+  }
+
+  function stopTest() {
+    for (const { stream, ctx, raf } of active) {
+      cancelAnimationFrame(raf);
+      stream.getTracks().forEach((t) => t.stop());
+      ctx.close();
+    }
+    active = [];
+    Object.values(meters).forEach((m) => (m.style.width = "0"));
+    $("stopBtn").disabled = true;
+    $("startBtn").disabled = selects.interviewer.options.length < 2;
+  }
+
+  $("loadBtn").addEventListener("click", loadMicrophones);
+  $("startBtn").addEventListener("click", startTest);
+  $("stopBtn").addEventListener("click", () => { stopTest(); setStatus("Test stopped; microphones released."); });
+  window.addEventListener("beforeunload", stopTest);
+})();
+</script>
+</body>
+</html>

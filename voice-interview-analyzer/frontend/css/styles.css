@@ -1,0 +1,115 @@
+:root {
+  --bg: #f5f6f8;
+  --card: #ffffff;
+  --ink: #1c2230;
+  --muted: #5d6677;
+  --line: #dfe3ea;
+  --accent: #2f6fed;
+  --accent-ink: #ffffff;
+  --ok: #1f9d55;
+  --warn: #b7791f;
+  --err: #c53030;
+  --int: #6b46c1;   /* interviewer colour */
+  --cand: #0f7b8a;  /* candidate colour */
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #11141a; --card: #1a1f28; --ink: #e6e9ef; --muted: #9aa3b3; --line: #2b3240;
+    --accent: #6c9bff; --int: #a48af0; --cand: #4fc3d1;
+  }
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--bg); color: var(--ink); }
+main { max-width: 1280px; margin: 0 auto; padding: 16px; }
+h2 { margin: 0 0 6px; font-size: 20px; }
+h3 { margin: 0 0 10px; font-size: 15px; }
+code { font-size: 13px; }
+[hidden] { display: none !important; }
+
+.topbar { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px;
+  background: var(--card); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 5; }
+.brand { font-weight: 700; }
+.pill { font-size: 13px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+.pill[data-state="connected"] { color: var(--ok); border-color: var(--ok); }
+.pill[data-state="reconnecting"] { color: var(--warn); border-color: var(--warn); }
+.pill[data-state="error"] { color: var(--err); border-color: var(--err); }
+
+.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; min-width: 0; }
+.muted { color: var(--muted); }
+.small { font-size: 12.5px; }
+.error { color: var(--err); min-height: 1.2em; }
+
+label { display: block; font-size: 13px; color: var(--muted); margin: 10px 0 4px; }
+label.check { display: flex; gap: 8px; align-items: flex-start; color: var(--ink); }
+input, select { width: 100%; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font: inherit; }
+input[type="checkbox"] { width: auto; margin-top: 3px; }
+button { padding: 8px 14px; border-radius: 6px; border: 1px solid var(--line); background: var(--card); color: var(--ink);
+  font: inherit; font-weight: 600; cursor: pointer; white-space: nowrap; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); margin-top: 12px; }
+button.danger { border-color: var(--err); color: var(--err); }
+button:disabled { opacity: .5; cursor: not-allowed; }
+
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 12px; }
+.copyrow { display: flex; gap: 8px; }
+.invites { margin-top: 12px; }
+
+.callbar { display: flex; gap: 16px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.participants { display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+.participant { font-size: 12.5px; padding: 3px 8px; border-radius: 999px; border: 1px solid var(--line); }
+.participant.interviewer { border-color: var(--int); color: var(--int); }
+.participant.candidate { border-color: var(--cand); color: var(--cand); }
+.participant.muted::after { content: " · muted"; }
+.participant.speaking { font-weight: 700; }
+.meter-wrap { flex: 1 1 160px; max-width: 260px; }
+.meter { height: 10px; background: var(--line); border-radius: 5px; overflow: hidden; }
+.meter > div { height: 100%; width: 0; background: var(--ok); transition: width 80ms linear; }
+
+.dash { display: grid; grid-template-columns: 1.2fr 1fr; grid-template-areas: "tr voice" "tr qa" "flags flags"; gap: 16px; }
+.dash .card { margin-bottom: 0; }
+.col-transcript { grid-area: tr; display: flex; flex-direction: column; }
+.col-voice { grid-area: voice; }
+.col-qa { grid-area: qa; }
+.col-flags { grid-area: flags; }
+.dash + .card { margin-top: 16px; }
+.scroll { overflow-y: auto; max-height: 420px; }
+.col-transcript .scroll { flex: 1; max-height: 640px; }
+
+.line { padding: 6px 0; border-bottom: 1px dashed var(--line); }
+.line .who { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; }
+.line.interviewer .who { color: var(--int); }
+.line.candidate .who { color: var(--cand); }
+.line .t { font-size: 12px; color: var(--muted); margin-left: 6px; }
+.line.partial .text { color: var(--muted); font-style: italic; }
+
+.qa { padding: 8px 0; border-bottom: 1px solid var(--line); }
+.qa .q { font-weight: 600; }
+.qa .a { margin: 6px 0 0 10px; padding-left: 10px; border-left: 3px solid var(--line); font-size: 14px; }
+.tag { display: inline-block; font-size: 11.5px; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--line); margin-right: 6px; }
+.tag.relevant { color: var(--ok); border-color: var(--ok); }
+.tag.partially_relevant, .tag.insufficient_context { color: var(--warn); border-color: var(--warn); }
+.tag.off_topic, .tag.unresolved { color: var(--err); border-color: var(--err); }
+
+.flag { border: 1px solid var(--line); border-left: 4px solid var(--warn); border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; cursor: pointer; }
+.flag:hover { border-color: var(--accent); }
+.flag .head { display: flex; justify-content: space-between; gap: 8px; font-weight: 600; }
+.flag .unc { font-size: 12.5px; color: var(--muted); margin-top: 4px; }
+.flag pre { font-size: 12px; background: var(--bg); padding: 6px 8px; border-radius: 6px; overflow-x: auto; margin: 6px 0 0; }
+
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+.stat { border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; }
+.stat .v { font-weight: 700; font-size: 16px; }
+.stat .k { font-size: 12px; color: var(--muted); }
+
+.log { font: 12.5px/1.6 ui-monospace, SFMono-Regular, Consolas, monospace; max-height: 160px; overflow-y: auto; color: var(--muted); }
+.devform { display: flex; gap: 8px; margin-top: 10px; border-top: 1px solid var(--line); padding-top: 10px; }
+.devform select { width: 130px; }
+
+.highlight { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+@media (max-width: 900px) {
+  .grid2 { grid-template-columns: 1fr; }
+  .dash { grid-template-columns: 1fr; grid-template-areas: "tr" "voice" "qa" "flags"; }
+}

@@ -1,0 +1,20 @@
+# --- Web backend ---
+fastapi>=0.110
+uvicorn[standard]>=0.29
+pydantic>=2.6
+python-dotenv>=1.0
+
+# --- Audio analysis ---
+numpy>=1.26
+
+# --- LiveKit (in-app call / media plane) ---
+livekit-api>=1.0        # server-side join tokens + room management
+livekit>=1.0            # realtime SDK used by the analysis worker to subscribe to tracks
+
+# --- Testing ---
+pytest>=8.0
+httpx>=0.27             # required by FastAPI TestClient
+
+# --- Optional (better pitch estimation / file I/O) ---
+# librosa>=0.10         # enables pYIN F0 estimation in app/analysis/voice_features.py
+# soundfile>=0.12       # reading/writing WAV for offline evaluation datasets

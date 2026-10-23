@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Voice Interview Analyzer</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <!-- LiveKit browser SDK (WebRTC call) and Chart.js (voice graphs) -->
+  <script src="https://cdn.jsdelivr.net/npm/livekit-client@2.15.8/dist/livekit-client.umd.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">Voice Interview Analyzer</div>
+  <div class="pill" id="callState" data-state="idle">Not connected</div>
+</header>
+
+<main>
+  <!-- ============ Setup / join ============ -->
+  <section id="setupView" class="card">
+    <h2>Start or join an interview</h2>
+    <p class="muted">Each participant joins from their own computer with their own microphone.
+      Your role is determined by your invite link, not by a setting in this page.</p>
+
+    <div class="grid2">
+      <div>
+        <h3>Interviewer: new session</h3>
+        <button id="createBtn" class="primary">Create interview session</button>
+        <div id="invitePanel" class="invites" hidden>
+          <label>Your interviewer link (keep private)</label>
+          <div class="copyrow"><input id="interviewerLink" readonly><button data-copy="interviewerLink">Copy</button></div>
+          <label>Send this link to the candidate</label>
+          <div class="copyrow"><input id="candidateLink" readonly><button data-copy="candidateLink">Copy</button></div>
+        </div>
+      </div>
+      <div>
+        <h3>Join with an invite</h3>
+        <label for="sessionInput">Session ID</label>
+        <input id="sessionInput" autocomplete="off">
+        <label for="inviteInput">Invite code</label>
+        <input id="inviteInput" autocomplete="off">
+        <label for="nameInput">Display name (optional)</label>
+        <input id="nameInput" maxlength="64">
+        <label class="check"><input type="checkbox" id="consentBox">
+          I understand this interview's audio is processed for transcription and voice analysis, and that results are
+          review cues for a human — not automated decisions.</label>
+        <button id="joinBtn" class="primary">Check microphone &amp; join</button>
+      </div>
+    </div>
+    <p id="setupError" class="error" role="alert"></p>
+  </section>
+
+  <!-- ============ In call ============ -->
+  <section id="callView" hidden>
+    <div class="card callbar">
+      <div>
+        <div class="muted small">Session <code id="sessionLabel"></code> · You are the <strong id="roleLabel"></strong></div>
+        <div class="participants" id="participants"></div>
+      </div>
+      <div class="meter-wrap" title="Your microphone level"><div class="meter"><div id="localMeter"></div></div></div>
+      <div class="actions">
+        <button id="muteBtn">Mute</button>
+        <button id="leaveBtn">Leave call</button>
+        <button id="finishBtn" class="danger" hidden>End interview</button>
+      </div>
+    </div>
+
+    <!-- Dashboard (interviewer only) -->
+    <div id="dashboard" hidden>
+      <div class="dash">
+        <div class="card col-transcript">
+          <h3>Live transcript</h3>
+          <div id="transcript" class="scroll"></div>
+          <form id="devForm" class="devform" hidden>
+            <select id="devRole"><option value="interviewer">Interviewer</option><option value="candidate">Candidate</option></select>
+            <input id="devText" placeholder="Dev mode: type a transcript line (no STT configured)">
+            <button type="submit">Add</button>
+          </form>
+        </div>
+
+        <div class="card col-voice">
+          <h3>Candidate voice <span class="muted small">(relative to own baseline)</span></h3>
+          <canvas id="voiceChart" height="180"></canvas>
+          <div id="voiceStats" class="stats"></div>
+        </div>
+
+        <div class="card col-qa">
+          <h3>Questions &amp; answers</h3>
+          <div id="qaList" class="scroll"></div>
+        </div>
+
+        <div class="card col-flags">
+          <h3>Review queue</h3>
+          <p class="muted small">Flags point to evidence for a human to review. They are not conclusions about honesty, stress or ability.</p>
+          <div id="flagList" class="scroll"></div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Status log</h3>
+        <div id="statusLog" class="log"></div>
+      </div>
+    </div>
+
+    <div id="candidateNote" class="card" hidden>
+      <p>You're connected. Speak normally — the interviewer can hear you. You can mute or leave at any time.</p>
+    </div>
+  </section>
+
+  <!-- ============ Ended ============ -->
+  <section id="endedView" class="card" hidden>
+    <h2>Call ended</h2>
+    <p id="endedMsg" class="muted">Your microphone has been released.</p>
+    <button id="reportBtn" class="primary" hidden>Open review report (JSON)</button>
+  </section>
+</main>
+
+<script src="js/audio.js"></script>
+<script src="js/call.js"></script>
+<script src="js/dashboard.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
